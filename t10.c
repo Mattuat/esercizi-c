@@ -26,8 +26,7 @@ interno del file.
 
 char *addr;
 FILE* file;
-sem_t* sem1;
-sem_t* sem2;
+int* sem;
 int ret,k;
 
 
@@ -42,48 +41,41 @@ void handler(){
 void routine(){
 
 	while(1){
-	printf("sono figlio vengo bloccato da sem2\n");
 		
-	ret = sem_wait(sem2); //figlio entra in sez critica
-		if(ret == -1){
-			printf("sem_wait error!\n");
-			exit(-6);
-			}
+		//semctl
+		semctl(sem, 1, SETVALUE, 0);
+		
+		printf("process %d  is writing '%s' on file",getpid(),addr);
 	
-	printf("process %d  is writing '%s' on file",getpid(),addr);
+		for(k=0;k<3;k++){
+			sleep(1);
+			printf(".");
+			fflush(stdin);
+		}
+		
+		ret = fprintf(file,"%d ",getpid());
 	
-	for(k=0;k<3;k++){
+		if(ret <= 0){
+			printf("write error!\n");
+			exit(-4);
+		}
+		
+		ret = fprintf(file,"%s ",*addr);
+	
+		if(ret <= 0){
+			printf("write error!\n");
+			exit(-4);
+		}
 		sleep(1);
-		printf(".");
 		fflush(stdin);
-		}
-		
-	ret = fprintf(file,"%d ",getpid());
+		printf("\nMessage '%s' succesful wrote on file!\n",addr);
 	
-	if(ret <= 0){
-		printf("write error!\n");
-		exit(-4);
-		}
-		
-	ret = fprintf(file,"%s ",*addr);
-	
-	if(ret <= 0){
-		printf("write error!\n");
-		exit(-4);
-		}
-	sleep(1);
-	fflush(stdin);
-	printf("\nMessage '%s' succesful wrote on file!\n",addr);
-	
-	ret = sem_post(sem1); //sblocco padre
-	if(ret == -1){
-		printf("sem_post error!\n");
-		exit(-6);
-		}
+		//semctl
+		semctl(sem, 0, SETVALUE, 1);
 	
 	}
-	exit(1);
-	}
+	exit(1);		//perchè hai un exit qui???
+}
 	
 int main(int argc,const char* argv[]){
 
@@ -107,20 +99,14 @@ int main(int argc,const char* argv[]){
 		exit(-3);
 		}
 	
-	sem1 = mmap(NULL,5*PAGESIZE,PROT_READ|PROT_WRITE|PROT_EXEC,MAP_SHARED|MAP_ANONYMOUS,0,0);
-	
-	if(sem1 == ((void*)-1)){
+	sem = (int*)mmap(NULL,5*PAGESIZE,PROT_READ|PROT_WRITE|PROT_EXEC,MAP_SHARED|MAP_ANONYMOUS,0,0);
+	if(sem == ((void*)-1)){
 		printf("mmap fail!\n");
 		exit(-3);
-		}
+	}
 	
-	sem2 = mmap(NULL,5*PAGESIZE,PROT_READ|PROT_WRITE|PROT_EXEC,MAP_SHARED|MAP_ANONYMOUS,0,0);
-	
-	if(sem2 == ((void*)-1)){
-		printf("mmap fail!\n");
-		exit(-3);
-		}
-		
+	*sem = semget(1111,2,IPC_CREAT|0666);
+
 	fd = open(argv[2],O_CREAT|O_TRUNC|O_RDWR,0666);
 	
 	if(fd == -1){
@@ -135,45 +121,21 @@ int main(int argc,const char* argv[]){
 		exit(-5);
 		}
 	
-	ret = sem_init(sem1,1,1); //semaforo padre
-	
-	if(ret == -1){
-		printf("sem_init fail!\n");
-		exit(-6);
-		}
-		
-	//prova ad assegnare al valore del semaforo 1 e vedi cosa fa
-	ret = sem_init(sem2,1,0); //semaforo figli 
-	
-	if(ret == -1){
-		printf("sem_init fail!\n");
-		exit(-6);
-		}
-
-
-	
-	
 	int i;
 	printf("doing fork %d times\n",N);
 	
 	for(i=0;i<N;i++){
 		if(fork() == 0){
 			routine();
-			}
-		
-		} 
+		}
+	} 
 		
 		signal(SIGINT,handler); //errori signal
 		
-		while(1){
+	while(1){
 			
-			
-			printf("sono il padre\n");
-			ret = sem_wait(sem1); //padre entra nella sez critica
-			if(ret == -1){
-					printf("sem_wait error!\n");
-					exit(-6);
-					}
+			//semctl
+			semctl(sem, 0, SETVALUE, 0);	
 		
 			printf("insert a string please, it will be written on file named '%s'\n",argv[2]);
 			
@@ -189,25 +151,14 @@ int main(int argc,const char* argv[]){
 				fflush(stdin);
 				printf("Message '%s' received!\n",addr);
 				
-				ret = sem_post(sem2); //sblocco figlio
-				
-				if(ret == -1){
-					printf("sem_post error!\n");
-					exit(-6);
-					}
-				}
-				
+			//semctl
+			semctl(sem, 1, SETVALUE, 1);
 		}
-		
-		
-		
-	
 		
 	printf("KILL %d\n",getpid());
 
 			
-	return 0;
-	
+	return 0;	
 }
 		
 	
