@@ -40,10 +40,15 @@ void handler(){
 
 void routine(){
 
+	struct sembuf oper;
+	
 	while(1){
 		
-		//semctl
-		semctl(sem, 1, SETVALUE, 0);
+		//decremento sem figlio
+		oper.sem_num = 1;
+		oper.sem_op = 1;
+		oper.sem_flg = SEM_UNDO;
+		semop(sem,&oper,1);	//identificatore, indirizzo sembuf, quanti sembuf.
 		
 		printf("process %d  is writing '%s' on file",getpid(),addr);
 	
@@ -70,8 +75,11 @@ void routine(){
 		fflush(stdin);
 		printf("\nMessage '%s' succesful wrote on file!\n",addr);
 	
-		//semctl
-		semctl(sem, 0, SETVALUE, 1);
+		//incremento sem padre
+		oper.sem_num = 0;
+		oper.sem_op = 1;
+		oper.sem_flg = 0;
+		semop(sem,&oper,1);
 	
 	}
 	exit(1);		//perchè hai un exit qui???
@@ -79,6 +87,8 @@ void routine(){
 	
 int main(int argc,const char* argv[]){
 
+	struct sembuf oper;
+	
 	if(argc < 3){
 		printf("usage: nomeProgramma interoN nomeFile\n");
 		exit(-1);
@@ -133,9 +143,11 @@ int main(int argc,const char* argv[]){
 		signal(SIGINT,handler); //errori signal
 		
 	while(1){
-			
-			//semctl
-			semctl(sem, 0, SETVALUE, 0);	
+			//decremento sem padre
+			oper.sem_num = 0;
+			oper.sem_op = 1;
+			oper.sem_flg = SEM_UNDO;
+			semop(sem,&oper,1);
 		
 			printf("insert a string please, it will be written on file named '%s'\n",argv[2]);
 			
@@ -151,9 +163,12 @@ int main(int argc,const char* argv[]){
 				fflush(stdin);
 				printf("Message '%s' received!\n",addr);
 				
-			//semctl
-			semctl(sem, 1, SETVALUE, 1);
-		}
+			//incremento sem figlio
+			oper.sem_num = 1;
+			oper.sem_op = 1;
+			oper.sem_flg = 0;
+			semop(sem,&oper,1);
+	}
 		
 	printf("KILL %d\n",getpid());
 
