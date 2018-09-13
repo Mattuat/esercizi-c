@@ -142,7 +142,8 @@ int main(int argc,const char* argv[]){
 		exit(-6);
 		}
 		
-	ret = sem_init(sem2,1,0); //semaforo figli
+	//prova ad assegnare al valore del semaforo 1 e vedi cosa fa
+	ret = sem_init(sem2,1,0); //semaforo figli 
 	
 	if(ret == -1){
 		printf("sem_init fail!\n");
