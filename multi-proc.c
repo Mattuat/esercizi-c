@@ -90,5 +90,6 @@ int main(int argc, char const *argv[])
         sem_post(semf);
     }
 
+    sem_close(semf);
     sem_close(semp);
 }
