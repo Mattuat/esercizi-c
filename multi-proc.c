@@ -15,19 +15,31 @@ interno del file.
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
 
+char output[4096];
 int fd, nproc, shmid, *value;
 sem_t *semp, *semf;
 FILE *file;
 
 //funzione stampa(parte quando CTRL-C è stato premuto)
-void printer();
+void printer(){
+    size_t byter;                                     //variabile che contiene num byte letti
+    printf("\n");
+    rewind(file);                                     //indice file lo posiziono all'inizio per scansionare
+    while((byter = fread(output,1,4096,file)) > 0)    //finche leggo byte li metto in output
+        fwrite(output,1,byter,stdout);                //scrive su stdout
+    fflush(stdout);                                   //flush stdout: senno nn hai niente
+    printf("\n");
+    //io ho messo di terminare
+    exit(0);
+}
 
 //funzione figlio
 void foo(){
-    //signal(SIGINT,SIG_IGN);
+    signal(SIGINT,SIG_IGN);
 
     //while figlio
     while(1){
@@ -52,7 +64,7 @@ int main(int argc, char const *argv[])
     value = (int*)shmat(shmid,NULL,SHM_R|SHM_W);
 
     //manca gestione SIGINT
-    //signal(SIGINT,printer);
+    signal(SIGINT,printer);
 
     nproc = atoi(argv[1]);  //converto string a int
 
