@@ -22,13 +22,13 @@ sem_t *semp,*semf;
 
 void routine(){
 	while(1){
+		printf("while figlio\n");
 		sem_wait(semf);
-		printf("sono figlio %d\n",getpid());
 		sleep(2);
-		fflush(stdin);
+		printf("sono figlio %d\n",getpid());
 		sem_post(semp);
-		}
-		}
+	}
+}
 
 int main(int argc,const char* argv[]){
 
@@ -63,14 +63,14 @@ int main(int argc,const char* argv[]){
 		}
 			
 		while(1){
+			printf("while padre\n");
 			sem_wait(semp);
-			printf("so padre");
 			sleep(2);
-			fflush(stdin);
+			printf("so padre\n");
 			sem_post(semf);
-			}
+		}
 	return 0;
-	}
+}
 	
 	
 	
