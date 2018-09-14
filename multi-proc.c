@@ -102,6 +102,6 @@ int main(int argc, char const *argv[])
         sem_post(semf);
     }
 
-    sem_close(semf);
-    sem_close(semp);
+    sem_close(semf);    //chiudo semaforo figlio
+    sem_close(semp);    //chiudo semaforo padre
 }
