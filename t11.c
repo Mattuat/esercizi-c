@@ -68,10 +68,12 @@ void handler(){
 	exit(1);
 	}
 
-void* routine(){
+void* routine(void* arg){
 		int j;
+		int *sos;
 		ssize_t ret;
-		j = i-1;
+		sos = (int*)(arg);
+		j = *sos -1;
 		char c[1] = {" "};
 		int rets;
 		
@@ -171,7 +173,7 @@ int main(int argc,const char* argv[]){
 		exit(-1);
 		}
 		
-		ret = pthread_create(&thread[i],NULL,routine,NULL);
+		ret = pthread_create(&thread[i],NULL,routine,(void*) &i);
 		
 		if(ret != 0){
 			printf("pthread_create error!\n");
