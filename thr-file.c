@@ -38,6 +38,8 @@ void printer(){
         fflush(stdout);                                 //flush dello stdout
         printf("\n");
     }
+    free(fd);                                           //libero memoria
+    sem_close(&sem);                                    //chiudo sem
     exit(0);
 }
 
