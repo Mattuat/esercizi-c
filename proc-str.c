@@ -16,7 +16,7 @@ l'associazione PID -> Stringa -> PID -> Stringa..*/
 #include <sys/ipc.h>
 
 struct data{
-    char *string;
+    char string[128];
     int pid;
     struct data *next;
 };
@@ -25,41 +25,38 @@ sem_t *semP,*semF;
 pid_t p;
 struct data *head;
 char *addr;
-int nproc, shmid, pWrite;
+int nproc, shmid;
 
 void push(struct data **head, char *str, int p){
     struct data *temp = malloc(sizeof(struct data));
     temp->pid = p;
-    temp->string = str;
+    strcpy(temp->string,str);
     temp->next = *head;
     *head = temp;
-    memset(addr,0,sizeof(addr));
 }
 
-void printer(){
+void print(){
+    printf("\n");
+    for(; head!=NULL;head=head->next){
+        printf("stringa %s - processo %d\n",head->string,head->pid);
+    }
     exit(0);
 }
 
 void foo(){
-    signal(SIGINT,printer);
+    signal(SIGINT,print);
     while(1){
         sem_wait(semF);
-        p = getpid();
         printf("inizio scrittura\n");
-retry:
-        if(!strcmp(addr,"")) goto retry;
-        pWrite = 1;
+        p = getpid();
+        push(&head,addr,(int)p);
         sem_post(semP);
     }
 }
 
 int main(int argc, char const *argv[])
 {
-    head = malloc(sizeof(struct data));
-
     if(argc != 2) return -1;
-
-    signal(SIGINT,SIG_IGN);
 
     semP = sem_open("padre",O_CREAT,0666,1);
     sem_unlink("padre");
@@ -76,19 +73,12 @@ int main(int argc, char const *argv[])
         }
     }
 
-    int j = 0;
-    while(!j){
+    while(1){
         sem_wait(semP);
-        if(pWrite) push(&head,addr,(int)p);
         printf("inserisci stringa\n");
         scanf("%s",addr);
-        pWrite = 0;
-        if(!strcmp(addr,"print")) j=1;
         sem_post(semF);
     }
-
-    for(;head != NULL; head = head->next)
-        printf("string %s - processo %d\n",head->string,head->pid);
 
     return 0;
 }
